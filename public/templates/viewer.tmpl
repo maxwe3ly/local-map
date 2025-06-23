@@ -1,151 +1,410 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{name}} - TileServer GL</title>
+
+  <!-- 将模板变量注入到全局 window 对象 -->
+  <script>
+    // 创建一个全局对象来存储所有模板变量
+    window.tileserverConfig = {
+      publicUrl: '{{public_url}}',
+      keyQuery: '{{&key_query}}',
+      keyQueryPart: '{{&key_query_part}}',
+      serverVersion: '{{server_version}}',
+      isLight: {{ is_light }},
+    id: '{{id}}',
+      name: '{{name}}'
+    };
+
+    // 如果有其他特定于 viewer 模板的变量，也可以添加到这里
+    {{#if serving_data }}
+    window.tileserverConfig.servingData = true;
+    {{/if }}
+
+    {{#if serving_rendered }}
+    window.tileserverConfig.servingRendered = true;
+    {{/if }}
+
+    {{#if is_terrain }}
+    window.tileserverConfig.isTerrain = true;
+    window.tileserverConfig.terrainEncoding = '{{terrain_encoding}}';
+    {{/if }}
+  </script>
+
   <link rel="stylesheet" type="text/css" href="{{public_url}}maplibre-gl.css{{&key_query}}" />
   <link rel="stylesheet" type="text/css" href="{{public_url}}maplibre-gl-inspect.css{{&key_query}}" />
-  <link rel="stylesheet" type="text/css" href="{{public_url}}leaflet.css{{&key_query}}" />
+  {{!--
+  <link rel="stylesheet" type="text/css" href="{{public_url}}leaflet.css{{&key_query}}" /> --}}
+  <link rel="stylesheet" type="text/css" href="{{public_url}}mapbox-gl-draw.css{{&key_query}}" />
+  <!-- 引入自定义 CSS 文件 -->
+  <link rel="stylesheet" type="text/css" href="{{public_url}}css/map-styles.css{{&key_query}}" />
+  <link href="{{public_url}}mapbox-gl.css" rel="stylesheet">
+  <link href="{{public_url}}maplibre-geoman-free.css" rel="stylesheet">
+
+  <script src="{{public_url}}turf.js"></script>
+  <!-- 3.12.0 -->
+  <script src="{{public_url}}mapbox-gl.js"></script>
   <script src="{{public_url}}maplibre-gl.js{{&key_query}}"></script>
   <script src="{{public_url}}maplibre-gl-inspect.js{{&key_query}}"></script>
+  <script src="{{public_url}}maplibre-geoman-free.js{{&key_query}}"></script>
+  <script src="{{public_url}}js/extend-mapbox-gl-draw.js{{&key_query}}"></script>
+  <script src="{{public_url}}mapbox-gl-draw.js{{&key_query}}"></script>
+  <script src="{{public_url}}mapbox-gl-draw-circle.js{{&key_query}}"></script>
+
   <script src="{{public_url}}leaflet.js{{&key_query}}"></script>
   <script src="{{public_url}}leaflet-hash.js{{&key_query}}"></script>
+
+  <!-- 引入我们的自定义模块 -->
+  <script src="{{public_url}}js/context-menu.js{{&key_query}}"></script>
+  <script src="{{public_url}}js/geometry-utils.js{{&key_query}}"></script>
+  <script src="{{public_url}}js/overlay-config.js{{&key_query}}"></script>
+  <script src="{{public_url}}js/maplibre-context-menu.js{{&key_query}}"></script>
+  <script src="{{public_url}}js/leaflet-context-menu.js{{&key_query}}"></script>
+  <script src="{{public_url}}js/arrow-draw-mode.js{{&key_query}}"></script>
   <style>
-    body { margin:0; padding:0; }
-    #map { position:absolute; top:0; bottom:0; width:100%; }
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
     .leaflet-control-layers-toggle {
       background-image: url({{public_url}}images/layers.png{{&key_query}});
       width: 36px;
       height: 36px;
     }
+
     .leaflet-retina .leaflet-control-layers-toggle {
       background-image: url({{public_url}}images/layers-2x.png{{&key_query}});
       background-size: 26px 26px;
     }
-    .leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+
+    .leaflet-default-icon-path {
+      /* used only in path-guessing heuristic, see L.Icon.Default */
       background-image: url({{public_url}}images/marker-icon.png{{&key_query}});
     }
   </style>
 </head>
+
 <body>
   <h1 style="display:none;">{{name}}</h1>
   <div id='map'></div>
+  <button id="export-features">导出覆盖物</button>
+  <button id="import-features">导入覆盖物</button>
   <script>
     function isWebglSupported() {
-        if (window.WebGLRenderingContext) {
-            const canvas = document.createElement('canvas');
-            try {
-                const context = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                if (context && typeof context.getParameter == 'function') {
-                    return true;
-                }
-            } catch (e) {
-                // WebGL is supported, but disabled
-            }
-            return false;
-        }
-        // WebGL not supported
-        return false;
-    }
-    var q = (location.search || '').substr(1).split('&');
-    var preference =
-      q.indexOf('vector') >= 0 ? 'vector' :
-        (q.indexOf('raster') >= 0 ? 'raster' :
-          (isWebglSupported() ? 'vector' : 'raster'));
-
-    var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
-    var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';    
-
-    if (preference == 'vector') {
-      maplibregl.setRTLTextPlugin('{{public_url}}mapbox-gl-rtl-text.js' + keyParam, true);
-      var map = new maplibregl.Map({
-        container: 'map',
-        style: '{{public_url}}styles/{{id}}/style.json' + keyParam,
-        hash: true,
-        maxPitch: 85
-      });
-      map.addControl(new maplibregl.GlobeControl());
-      map.addControl(new maplibregl.NavigationControl({
-         visualizePitch: true,
-         showZoom: true,
-         showCompass: true
-      }));
-
-      //check if terrain is available, before enabling the control
-      map.on('style.load', function () {
-        var terrainId = null;
-        Object.entries(map.getStyle().sources).some(function (source) {
-          if (source[1].type == "raster-dem") {
-            terrainId = source[0];
+      if (window.WebGLRenderingContext) {
+        const canvas = document.createElement('canvas');
+        try {
+          const context = canvas.getContext('webgl2') || canvas.getContext('webgl');
+          if (context && typeof context.getParameter == 'function') {
             return true;
           }
-        });
+        } catch (e) {
+          // WebGL is supported, but disabled
+        }
+        return false;
+      }
+      // WebGL not supported
+      return false;
+    }
+    var q = (location.search || '').substr(1).split('&');
+    const preference = 'vector';
+    // var preference =
+    //  q.indexOf('vector') >= 0 ? 'vector' :
+    //    (q.indexOf('raster') >= 0 ? 'raster' :
+    //      (isWebglSupported() ? 'vector' : 'raster'));
 
-        if (terrainId) {
-          map.addControl(
-            new maplibregl.TerrainControl({
-              source: terrainId,
-            })
-          );
+    var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
+    var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';
+
+    if (preference == 'vector') {
+      maplibregl.setRTLTextPlugin(window.tileserverConfig.publicUrl + 'mapbox-gl-rtl-text.js' + keyParam, true);
+      window.map = {};
+      var map = new maplibregl.Map({
+        container: 'map',
+        style: window.tileserverConfig.publicUrl + 'styles/' + window.tileserverConfig.id + '/style.json' + keyParam,
+        hash: true,
+        maxPitch: 85,
+        // maxZoom: 18,
+        // minZoom: 15,
+        attributionControl: false,
+      });
+      window.map.instance = map;
+
+      map.addControl(new maplibregl.NavigationControl({
+        visualizePitch: true,
+        showZoom: true,
+        showCompass: true
+      }));
+      map.addControl(new maplibregl.FullscreenControl());
+      map.addControl(new maplibregl.ScaleControl({
+          maxWidth: 80,
+          unit: 'metric'
+      }));
+
+      map.on('style.load', function () {
+        // disable terrain control
+        //check if terrain is available, before enabling the control
+        // var terrainId = null;
+        // Object.entries(map.getStyle().sources).some(function (source) {
+        //   if (source[1].type == "raster-dem") {
+        //     terrainId = source[0];
+        //     return true;
+        //   }
+        // });
+
+        // if (terrainId) {
+        //   map.addControl(
+        //     new maplibregl.TerrainControl({
+        //       source: terrainId,
+        //     })
+        //   );
+        // }
+
+        // 初始化MapLibre右键菜单，传入自定义覆盖物配置
+        // new MapLibreContextMenu(map, { customOverlays: OverlayConfig.getCustomOverlays() });
+      });
+
+      // map.addControl(new MaplibreInspect({
+      //    showMapPopupOnHover: false,
+      //    showInspectMapPopupOnHover: false,
+      //    selectThreshold: 5
+      // }));
+
+      // window.map.mapBoxDraw = new MapboxDraw({
+      //   controls: {
+      //     line_string: true,
+      //     polygon: true,
+      //     trash: true,
+      //     combine_features: false,
+      //     uncombine_features: false,
+      //   },
+      //   modes: Object.assign({
+      //     // draw_circle: window['mapbox-gl-draw-circle'].CircleMode,
+      //     drag_circle: window['mapbox-gl-draw-circle'].DragCircleMode,
+      //     direct_select: window['mapbox-gl-draw-circle'].DirectMode,
+      //     simple_select: window['mapbox-gl-draw-circle'].SimpleSelectMode,
+      //     // 添加箭头绘制模式
+      //     draw_arrow: window.ArrowDrawMode
+      //   }, window.MapboxDraw.modes),
+      //   displayControlsDefault: false,
+      // });
+      // const drawBar = new extendDrawBar({
+      //   draw: window.map.mapBoxDraw,
+      //   buttons: [
+      //     {
+      //       on: 'click',
+      //       action: function () {window.map.mapBoxDraw.changeMode('drag_circle')},
+      //       classes: ['mapbox-gl-draw_circle'],
+      //       // content: ''
+      //     },
+      //     {
+      //       on: 'click',
+      //       action: function () {window.map.mapBoxDraw.changeMode('draw_arrow')},
+      //       classes: ['mapbox-gl-draw_arrow'],
+      //       // content: ''
+      //     },
+      //   ]
+      // });
+
+      window.map.geoman = new window.Geoman.Geoman(map, {
+        settings: {
+          controlsPosition: 'top-left',
+          throttlingDelay: 100
+        },
+        controls: {
+          draw: {
+            text_marker: {
+              uiEnabled: false,
+            },
+            circle_marker: {
+              uiEnabled: false,
+            },
+            marker: {
+              title: '绘制默认覆盖物',
+            },
+            circle: {
+              title: '绘制圆',
+            },
+            line: {
+              title: '绘制折线',
+            },
+            rectangle: {
+              title: '绘制矩形',
+            },
+            polygon: {
+              title: '绘制多边形',
+              uiEnabled: true
+            },
+          },
+          edit: {
+            drag: {
+              uiEnabled: true,
+              title: '移动图形'
+            },
+            change: {
+              title: '编辑图形'
+            },
+            rotate: {
+              title: '旋转图形'
+            },
+            delete: {
+              title: '删除图形'
+            },
+            cut: {
+              uiEnabled: false,
+            }
+          },
+          helper: {
+            zoom_to_features: {
+              uiEnabled: true,
+              title: '展示所有图形'
+            },
+            shape_markers: {
+              uiEnabled: false,
+            },
+            snapping: {
+              uiEnabled: false,
+            }
+          }
         }
       });
 
-      map.addControl(new MaplibreInspect({
-         showMapPopupOnHover: false,
-         showInspectMapPopupOnHover: false,
-         selectThreshold: 5
-      }));
-    } else {
-        var map = L.map('map', { minZoom: 1, zoomControl: false });
-        new L.Control.Zoom({ position: 'topright' }).addTo(map);
-        
-        var tile_urls = [], tile_attribution, tile_minzoom, tile_maxzoom;
-        var url = '{{public_url}}styles/512/{{id}}.json' + keyParam;
-        var req = new XMLHttpRequest();
-        req.overrideMimeType("application/json");
-        req.open('GET', url, true);
-        req.onload = function() {
-            var jsonResponse = JSON.parse(req.responseText);
-            for (key in jsonResponse) {
-              var keyl = key.toLowerCase();
-                switch(keyl) {
-                  case "tiles":
-                    tile_urls = jsonResponse[key];
-                    break;
-                  case "attribution":
-                    tile_attribution = jsonResponse[key];
-                    break;
-                  case "minzoom":
-                    tile_minzoom = jsonResponse[key];
-                    break;
-                  case "maxzoom":
-                    tile_maxzoom = jsonResponse[key];
-                    break;
-                }
-            }
+      const getGeoJson = (featureData) => {
+        try {
+          return JSON.stringify(featureData.getGeoJson(), null, 2);
+        } catch (e) {
+          throw Error('Can\'t retrieve GeoJSON');
+        }
+      };
 
-            for (tile_url in tile_urls) {
-                L.tileLayer(tile_urls[tile_url], {
-                    tileSize: 512,
-                    zoomOffset: -1,
-                    minZoom: tile_minzoom,
-                    maxZoom: tile_maxzoom,
-                    attribution: tile_attribution
-                }).addTo(map);
-            }
+      map.on('gm:loaded', () => {
+        console.log('Geoman fully loaded');
+
+        // 添加地图缩放事件监听器
+        // map.on('zoom', () => {
+        //   console.log('地图缩放中，当前缩放级别:', map.getZoom().toFixed(2));
+        // });
+
+        // map.on('zoomend', () => {
+        //   console.log('地图缩放结束，最终缩放级别:', map.getZoom().toFixed(2));
+        // });
+
+        // 添加事件监听器，监听 feature 的增加、编辑和删除操作
+        // 监听创建事件
+        map.on('gm:create', (event) => {
+          console.log('操作类型: 增加', {
+            shape: event.shape,  // 形状类型（如 marker, circle, polygon 等）
+            feature: getGeoJson(event.feature)  // feature 数据
+          });
+        });
+
+        // 监听编辑事件
+        map.on('gm:editend', (event) => {
+          console.log('操作类型: 编辑', {
+            feature: getGeoJson(event.feature)  // 被编辑的 feature 数据
+          });
+        });
+
+        // 监听删除事件
+        map.on('gm:remove', (event) => {
+          console.log('操作类型: 删除', {
+            shape: event.shape, 
+            feature: event.feature.id 
+          });
+        });
+
         
-            map.eachLayer(function(layer) {
-              // do not add scale prefix even if retina display is detected
-              layer.scalePrefix = '.';
-            });
-        };
-        req.send(null);
-      
-        setTimeout(function() {
-            new L.Hash(map);
-        }, 0);
+        function getGeoJsonFromEvent(event) {
+          return getGeoJson(event.feature);
+        }
+
+        map.on('gm:rotateend', function(event) {
+          console.log('操作类型: 旋转', {
+            feature: getGeoJsonFromEvent(event)
+          })
+        });
+        map.on('gm:dragend', function(event) {
+          console.log('操作类型: 移动', {
+            feature: getGeoJsonFromEvent(event)
+          })
+        });
+        // 以下事件不影响覆盖物数据，不做监听
+        // map.on('gm:helper', function(event) {
+        //   console.log('操作类型: 辅助', {
+        //     feature: getGeoJsonFromEvent(event)
+        //   })
+        // });
+        // map.on('gm:control', function(event) {
+        //   console.log('操作类型: 控制', {
+        //     feature: getGeoJsonFromEvent(event)
+        //   })
+        // });
+
+        // 导出覆盖物功能
+        document.getElementById('export-features').addEventListener('click', function () {
+          // 导出所有覆盖物为 GeoJSON
+          const allFeatures = map.gm.features.exportGeoJson();
+
+          // 创建 Blob 对象
+          const blob = new Blob([JSON.stringify(allFeatures, null, 2)], { type: 'application/json' });
+
+          // 创建下载链接
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'map-features.geojson';
+
+          // 触发下载
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        });
+
+        // 导入覆盖物功能
+        document.getElementById('import-features').addEventListener('click', function () {
+          // 创建文件输入元素
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = '.json,.geojson';
+
+          fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              try {
+                const geojson = JSON.parse(e.target.result);
+
+                // 导入 GeoJSON 到地图
+                const result = map.gm.features.importGeoJson(geojson);
+                console.log('导入结果:', result);
+
+                // 显示导入结果
+                alert(`成功导入 ${result.stats.success} 个覆盖物，失败 ${result.stats.failed} 个`);
+              } catch (error) {
+                console.error('导入 GeoJSON 失败:', error);
+                alert('导入失败，请确保文件格式正确');
+              }
+            };
+            reader.readAsText(file);
+          });
+
+          // 触发文件选择对话框
+          fileInput.click();
+        });
+
+
+      });
+      // map.addControl(drawBar, 'top-left');
     }
+
   </script>
 </body>
+
 </html>
