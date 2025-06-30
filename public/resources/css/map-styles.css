@@ -125,7 +125,17 @@
   background-size: 15px;
 }
 
-/* */
 .mapboxgl-ctrl-group .mapbox-gl-draw_ctrl-draw-btn.active {
   background-color: initial;
+}
+
+/* 自定义大头针样式 */
+.floating-image {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1001;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  display: none;
 }

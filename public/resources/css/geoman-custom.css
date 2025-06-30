@@ -1,0 +1,54 @@
+/* Geoman 工具栏布局 - 工具栏组之间水平排列，组内垂直排列 */
+.maplibregl-ctrl-group {
+  display: flex !important;
+  flex-direction: column !important; /* 组内垂直排列 */
+  margin-right: 10px !important;
+}
+
+.gm-reactive-controls{
+  display: flex;
+}
+
+/* 使 draw 和 edit 控制组水平排列 */
+.maplibregl-ctrl-top-right {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+}
+
+/* 确保按钮样式正确 */
+.maplibregl-ctrl-group button {
+  display: block !important;
+  border-right: none !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 最后一个按钮不需要底部边框 */
+.maplibregl-ctrl-group button:last-child {
+  border-bottom: none !important;
+}
+
+/* 修复按钮高度，确保一致性 */
+.maplibregl-ctrl-group button {
+  height: 30px !important;
+  width: 30px !important;
+}
+
+/* 比例尺控件居中显示在底部 */
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  position: absolute;
+  bottom: 0;
+  left: 50% !important;
+  transform: translateX(-50%);
+}
+
+/* 确保比例尺控件样式正确 */
+.maplibregl-ctrl-scale {
+  margin: 0 0 10px 0 !important;
+  border: 2px solid rgba(0, 0, 0, 0.4) !important;
+  border-top: none !important;
+  padding: 0 5px !important;
+  color: #000 !important;
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}

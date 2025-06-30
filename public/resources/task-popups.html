@@ -1,0 +1,44 @@
+<!-- 任务已完成弹窗 -->
+<div id="task-completed-popup" class="task-popup task-popup-completed">
+  <div class="task-popup-header">
+    <h3 class="task-popup-title"><span class="task-status-icon">✓</span> 任务已完成</h3>
+    <button class="task-popup-close" onclick="closePopup('task-completed-popup')">&times;</button>
+  </div>
+  <div class="task-popup-content">
+    <p>该任务已经成功完成。您可以查看详情或继续其他任务。</p>
+  </div>
+  <div class="task-popup-footer">
+    <button class="task-popup-button secondary" onclick="closePopup('task-completed-popup')">关闭</button>
+    <button class="task-popup-button primary">查看详情</button>
+  </div>
+</div>
+
+<!-- 任务进行中弹窗 -->
+<div id="task-in-progress-popup" class="task-popup task-popup-in-progress">
+  <div class="task-popup-header">
+    <h3 class="task-popup-title"><span class="task-status-icon">⟳</span> 任务进行中</h3>
+    <button class="task-popup-close" onclick="closePopup('task-in-progress-popup')">&times;</button>
+  </div>
+  <div class="task-popup-content">
+    <p>该任务正在进行中。您可以查看当前进度或暂停任务。</p>
+  </div>
+  <div class="task-popup-footer">
+    <button class="task-popup-button secondary" onclick="closePopup('task-in-progress-popup')">关闭</button>
+    <button class="task-popup-button primary">查看进度</button>
+  </div>
+</div>
+
+<!-- 任务未开始弹窗 -->
+<div id="task-not-started-popup" class="task-popup task-popup-not-started">
+  <div class="task-popup-header">
+    <h3 class="task-popup-title"><span class="task-status-icon">○</span> 任务未开始</h3>
+    <button class="task-popup-close" onclick="closePopup('task-not-started-popup')">&times;</button>
+  </div>
+  <div class="task-popup-content">
+    <p>该任务尚未开始。您可以立即开始或安排在稍后进行。</p>
+  </div>
+  <div class="task-popup-footer">
+    <button class="task-popup-button secondary" onclick="closePopup('task-not-started-popup')">关闭</button>
+    <button class="task-popup-button primary">开始任务</button>
+  </div>
+</div>
