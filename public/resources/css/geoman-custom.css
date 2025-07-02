@@ -1,7 +1,7 @@
-/* Geoman 工具栏布局 - 工具栏组之间水平排列，组内垂直排列 */
+/* Geoman 工具栏布局 - 工具栏组之间水平排列，组内水平排列 */
 .maplibregl-ctrl-group {
   display: flex !important;
-  flex-direction: column !important; /* 组内垂直排列 */
+  flex-direction: row !important; /* 组内水平排列 */
   margin-right: 10px !important;
 }
 
