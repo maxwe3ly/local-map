@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function () {
   map.on('load', function () {
     // 设置标记管理器
     const markerManager = setupMarkers(map);
+    
+    // 将 MarkerManager 实例设置为全局变量
+    window.markerManager = markerManager;
 
     // 设置导入导出功能
     setupImportExport(map, markerManager);

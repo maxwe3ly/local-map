@@ -149,8 +149,8 @@ class MarkerManager {
     const el = document.createElement('div');
     el.className = 'custom-marker';
     el.style.backgroundImage = `url(${imageUrl})`;
-    el.style.width = '36px';
-    el.style.height = '36px';
+    el.style.width = '50px';
+    el.style.height = '50px';
     el.style.backgroundSize = 'contain';
 
     const markerOptions = {
